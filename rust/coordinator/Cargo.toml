@@ -1,0 +1,13 @@
+[package]
+name = "coordinator"
+version = "0.1.0"
+edition = "2021"
+
+[package.metadata.lambda.deploy]
+memory = 3538
+timeout = 900
+
+[dependencies]
+lambda_runtime = "1.0.1"
+map-lambda-coordinator = { git = "https://github.com/tomwhite/map-lambda" }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }

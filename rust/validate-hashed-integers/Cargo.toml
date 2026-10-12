@@ -1,0 +1,23 @@
+[package]
+name = "validate-hashed-integers"
+version = "0.1.0"
+edition = "2021"
+
+[package.metadata.lambda.deploy]
+memory = 1769
+timeout = 300
+
+[dependencies]
+common = { path = "../common" }
+lambda_runtime = "1.0.1"
+serde = "1"
+tokio = { version = "1", features = ["macros"] }
+zarrs = { version = "0.23", default-features = false, features = [
+    "async",
+    "zstd",
+    "sharding",
+    "crc32c",
+] }
+
+[dev-dependencies]
+tempfile = "3"

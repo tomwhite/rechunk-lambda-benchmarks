@@ -1,0 +1,10 @@
+[workspace]
+resolver = "2"
+members = [
+    "common",
+    "coordinator",
+    "copy",
+    "delete-intermediate",
+    "hashed-integers",
+    "validate-hashed-integers",
+]

@@ -1,0 +1,17 @@
+[package]
+name = "hashed-integers"
+version = "0.1.0"
+edition = "2021"
+
+[package.metadata.lambda.deploy]
+memory = 1769
+timeout = 300
+
+[dependencies]
+common = { path = "../common" }
+lambda_runtime = "1.0.1"
+serde = "1"
+tokio = { version = "1", features = ["macros"] }
+
+[dev-dependencies]
+tempfile = "3"
