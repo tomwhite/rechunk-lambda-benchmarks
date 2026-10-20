@@ -928,7 +928,7 @@ wheels = [
 [[package]]
 name = "map-lambda"
 version = "0.1.0"
-source = { git = "https://github.com/tomwhite/map-lambda#2123a27604e17eb94dd16d34f9ae0b74d5340f97" }
+source = { git = "https://github.com/tomwhite/map-lambda#17092577730f8dfca985eb972803f58e8a703ffd" }
 dependencies = [
     { name = "aioboto3" },
     { name = "aiostream" },

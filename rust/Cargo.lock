@@ -1852,7 +1852,7 @@ checksum = "4050469837a6ff301cd14c1f8f24f88549e6d548f24f64e2148eb0f72cebc51f"
 [[package]]
 name = "map-lambda-coordinator"
 version = "0.1.0"
-source = "git+https://github.com/tomwhite/map-lambda#2123a27604e17eb94dd16d34f9ae0b74d5340f97"
+source = "git+https://github.com/tomwhite/map-lambda#17092577730f8dfca985eb972803f58e8a703ffd"
 dependencies = [
  "aws-config",
  "aws-credential-types",
@@ -1862,9 +1862,19 @@ dependencies = [
  "fastrand",
  "futures",
  "lambda_runtime",
+ "map-lambda-protocol",
  "serde",
  "serde_json",
  "tokio",
+]
+
+[[package]]
+name = "map-lambda-protocol"
+version = "0.1.0"
+source = "git+https://github.com/tomwhite/map-lambda#17092577730f8dfca985eb972803f58e8a703ffd"
+dependencies = [
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
