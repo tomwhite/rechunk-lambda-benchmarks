@@ -27,7 +27,7 @@ def actual(joined: list[dict[str, Any]]) -> dict[str, Any] | None:
     Cost of the invocations in `joined`, or None if the REPORT lines
     carried no billing data.
 
-    Counts only the invocations joined here: a coordinator's own cost,
+    Counts only the invocations joined here: a dispatcher's own cost,
     and any invocation whose REPORT line was missed, are not included.
     S3 requests are the per-task counts the CLI stamps from the plan, so
     exclude retries and metadata; `s3_recorded` is False for stats files

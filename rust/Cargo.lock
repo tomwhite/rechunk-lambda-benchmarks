@@ -756,15 +756,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "coordinator"
-version = "0.1.0"
-dependencies = [
- "lambda_runtime",
- "map-lambda-coordinator",
- "tokio",
-]
-
-[[package]]
 name = "copy"
 version = "0.1.0"
 dependencies = [
@@ -968,6 +959,15 @@ dependencies = [
  "const-oid",
  "crypto-common 0.2.2",
  "ctutils",
+]
+
+[[package]]
+name = "dispatcher"
+version = "0.1.0"
+dependencies = [
+ "lambda_runtime",
+ "map-lambda-dispatcher",
+ "tokio",
 ]
 
 [[package]]
@@ -1850,9 +1850,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4050469837a6ff301cd14c1f8f24f88549e6d548f24f64e2148eb0f72cebc51f"
 
 [[package]]
-name = "map-lambda-coordinator"
+name = "map-lambda-dispatcher"
 version = "0.1.0"
-source = "git+https://github.com/tomwhite/map-lambda#17092577730f8dfca985eb972803f58e8a703ffd"
+source = "git+https://github.com/tomwhite/map-lambda?rev=37924bc#37924bc455558ddd7de3f0a4dcbbe12bf32836f9"
 dependencies = [
  "aws-config",
  "aws-credential-types",
@@ -1871,7 +1871,7 @@ dependencies = [
 [[package]]
 name = "map-lambda-protocol"
 version = "0.1.0"
-source = "git+https://github.com/tomwhite/map-lambda#17092577730f8dfca985eb972803f58e8a703ffd"
+source = "git+https://github.com/tomwhite/map-lambda?rev=37924bc#37924bc455558ddd7de3f0a4dcbbe12bf32836f9"
 dependencies = [
  "serde",
  "serde_json",

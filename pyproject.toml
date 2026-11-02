@@ -15,7 +15,7 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-map-lambda = { git = "https://github.com/tomwhite/map-lambda" }
+map-lambda = { git = "https://github.com/tomwhite/map-lambda", rev = "37924bc" }
 
 [project.optional-dependencies]
 diagnostics = [

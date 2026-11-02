@@ -183,18 +183,6 @@ wheels = [
 ]
 
 [[package]]
-name = "aiostream"
-version = "0.8.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "typing-extensions" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/02/be/c3e2b0e360a0350294df8f8d90cf51bef258ca1421b8bf1e4bea49a2661a/aiostream-0.8.1.tar.gz", hash = "sha256:32d180b4ab01ebb2fc59eda7fa59f496895a4d07b32fc57537d1dade2514a8a1", size = 45013, upload-time = "2026-09-16T10:41:54.253Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/7b/8c/018f92b5e71460ed4e83bb066a64c0a0072d8f90273464c75104bab73262/aiostream-0.8.1-py3-none-any.whl", hash = "sha256:f31c894f1e14a0825a45458e311e0b2a12d80b0d247a0fdf46d7d8ecaf4bc796", size = 41858, upload-time = "2026-09-16T10:41:52.865Z" },
-]
-
-[[package]]
 name = "ast-serialize"
 version = "0.12.1"
 source = { registry = "https://pypi.org/simple" }
@@ -928,11 +916,7 @@ wheels = [
 [[package]]
 name = "map-lambda"
 version = "0.1.0"
-source = { git = "https://github.com/tomwhite/map-lambda#17092577730f8dfca985eb972803f58e8a703ffd" }
-dependencies = [
-    { name = "aioboto3" },
-    { name = "aiostream" },
-]
+source = { git = "https://github.com/tomwhite/map-lambda?rev=37924bc#37924bc455558ddd7de3f0a4dcbbe12bf32836f9" }
 
 [package.optional-dependencies]
 diagnostics = [
@@ -1773,8 +1757,8 @@ requires-dist = [
     { name = "aioboto3", specifier = ">=15.5.0" },
     { name = "boto3", specifier = ">=1.40.61" },
     { name = "click", specifier = ">=8.5.0" },
-    { name = "map-lambda", git = "https://github.com/tomwhite/map-lambda" },
-    { name = "map-lambda", extras = ["diagnostics"], marker = "extra == 'diagnostics'", git = "https://github.com/tomwhite/map-lambda" },
+    { name = "map-lambda", git = "https://github.com/tomwhite/map-lambda?rev=37924bc" },
+    { name = "map-lambda", extras = ["diagnostics"], marker = "extra == 'diagnostics'", git = "https://github.com/tomwhite/map-lambda?rev=37924bc" },
     { name = "obstore", specifier = ">=0.11.1" },
     { name = "zarr", specifier = ">=3.3.0" },
 ]

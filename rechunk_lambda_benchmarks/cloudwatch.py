@@ -325,7 +325,7 @@ def queueing_dominates(joined: list[dict[str, Any]]) -> bool:
     duration.
 
     The floor is the 5th percentile rather than the minimum, and clamped
-    at zero: `dispatch_ms` carries the clock skew between a coordinator
+    at zero: `dispatch_ms` carries the clock skew between a dispatcher
     and Lambda's REPORT line, so at any scale some invocations report a
     little negative and the minimum is one of them.
     """

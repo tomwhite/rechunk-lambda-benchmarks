@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 import zarr
-from map_lambda import LOCAL_ENDPOINT_URL, Lambdas
+from map_lambda import LOCAL_ENDPOINT_URL, Session
 
 from rechunk_lambda_benchmarks.rechunk import rechunk
 from rechunk_lambda_benchmarks.store import path_to_store
@@ -44,9 +44,9 @@ async def test_rechunk(tmp_path, shape, source_chunks, target_chunks):
     source_store, expected = _make_source_array(tmp_path, shape, source_chunks)
     target_store = _store_uri(tmp_path / "target")
 
-    async with Lambdas(endpoint_url=LOCAL_ENDPOINT_URL) as lambdas:
+    async with Session(endpoint_url=LOCAL_ENDPOINT_URL) as session:
         target_array = await rechunk(
-            lambdas, source_store, target_store, target_chunks=target_chunks
+            session, source_store, target_store, target_chunks=target_chunks
         )
 
     assert target_array.shape == shape

@@ -10,7 +10,7 @@ import click
 import numpy as np
 import zarr
 from botocore.exceptions import BotoCoreError, ClientError
-from map_lambda import DEFAULT_CONCURRENCY, LOCAL_ENDPOINT_URL, Lambdas
+from map_lambda import DEFAULT_CONCURRENCY, LOCAL_ENDPOINT_URL, Session
 from map_lambda import stats as stats_module
 from map_lambda import timeline as timeline_module
 from zarr.errors import BaseZarrError
@@ -54,8 +54,8 @@ def open_array(store: str, name: str | None = None) -> Any:
         ) from e
 
 
-def resolve_coordinators(coordinators: int | None) -> "int | Literal['auto']":
-    return "auto" if coordinators is None else coordinators
+def resolve_dispatchers(dispatchers: int | None) -> "int | Literal['auto']":
+    return "auto" if dispatchers is None else dispatchers
 
 
 def resolve_endpoint_url(local: bool, endpoint_url: str | None) -> str | None:
@@ -139,11 +139,11 @@ local_option = click.option(
     help=f"Shorthand for --endpoint-url {LOCAL_ENDPOINT_URL} (cargo lambda watch).",
 )
 
-coordinators_option = click.option(
-    "--coordinators",
+dispatchers_option = click.option(
+    "--dispatchers",
     type=click.IntRange(min=1),
     default=None,
-    help=("Dispatch through this many coordinator lambdas, splitting --concurrency between them."),
+    help=("Dispatch through this many dispatcher lambdas, splitting --concurrency between them."),
 )
 
 concurrency_option = click.option(
@@ -198,7 +198,7 @@ def cli() -> None:
 @click.option("--chunks", type=SHAPE, required=True, help="Chunk shape, e.g. 10,10.")
 @endpoint_url_option
 @local_option
-@coordinators_option
+@dispatchers_option
 @concurrency_option
 @retries_option
 @stats_option
@@ -210,7 +210,7 @@ def hashed_integers_command(
     chunks: tuple[int, ...],
     endpoint_url: str | None,
     local: bool,
-    coordinators: int | None,
+    dispatchers: int | None,
     concurrency: int,
     retries: int,
     stats: bool,
@@ -225,20 +225,20 @@ def hashed_integers_command(
     store = store_url(store, mkdir=True)
     collected = collect_stats(stats, stats_path)
     n_tasks, unit, detail = batching(shape, chunks, chunks_per_invocation)
-    coordinator_stats: list[dict[str, Any]] = []
+    dispatcher_stats: list[dict[str, Any]] = []
 
     async def go(on_done: Callable[[int], None]) -> Any:
-        async with Lambdas(
+        async with Session(
             endpoint_url=endpoint_url,
-            coordinators=resolve_coordinators(coordinators),
+            dispatchers=resolve_dispatchers(dispatchers),
             concurrency=concurrency,
             retries=retries,
             on_progress=on_done,
-            coordinator_stats=coordinator_stats,
+            dispatcher_stats=dispatcher_stats,
             invocation_stats=collected,
-        ) as lambdas:
+        ) as session:
             return await hashed_integers_module.hashed_integers(
-                lambdas, store, shape, chunks=chunks, chunks_per_invocation=chunks_per_invocation
+                session, store, shape, chunks=chunks, chunks_per_invocation=chunks_per_invocation
             )
 
     array = run(
@@ -252,14 +252,14 @@ def hashed_integers_command(
         s3_requests=[(0, chunks_module.chunk_count(shape, chunks) / n_tasks)],
     )
     click.echo(f"created {store} {array.shape} chunked {array.chunks} ({array.dtype})")
-    click.echo(stats_module.summarize_coordinators(coordinator_stats))
+    click.echo(stats_module.summarize_dispatchers(dispatcher_stats))
 
 
 @cli.command("validate-hashed-integers")
 @click.argument("store")
 @endpoint_url_option
 @local_option
-@coordinators_option
+@dispatchers_option
 @concurrency_option
 @retries_option
 @stats_option
@@ -269,7 +269,7 @@ def validate_hashed_integers_command(
     store: str,
     endpoint_url: str | None,
     local: bool,
-    coordinators: int | None,
+    dispatchers: int | None,
     concurrency: int,
     retries: int,
     stats: bool,
@@ -286,20 +286,20 @@ def validate_hashed_integers_command(
     # opened here to size the bar, and so a missing store fails at the prompt
     array = open_array(store)
     n_tasks, unit, detail = batching(array.shape, array.chunks, chunks_per_invocation)
-    coordinator_stats: list[dict[str, Any]] = []
+    dispatcher_stats: list[dict[str, Any]] = []
 
     async def go(on_done: Callable[[int], None]) -> Any:
-        async with Lambdas(
+        async with Session(
             endpoint_url=endpoint_url,
-            coordinators=resolve_coordinators(coordinators),
+            dispatchers=resolve_dispatchers(dispatchers),
             concurrency=concurrency,
             retries=retries,
             on_progress=on_done,
-            coordinator_stats=coordinator_stats,
+            dispatcher_stats=dispatcher_stats,
             invocation_stats=collected,
-        ) as lambdas:
+        ) as session:
             await hashed_integers_module.validate_hashed_integers(
-                lambdas, store, chunks_per_invocation=chunks_per_invocation
+                session, store, chunks_per_invocation=chunks_per_invocation
             )
 
     run(
@@ -313,7 +313,7 @@ def validate_hashed_integers_command(
         s3_requests=[(chunks_module.chunk_count(array.shape, array.chunks) / n_tasks, 0)],
     )
     click.echo(f"successfully validated {store}")
-    click.echo(stats_module.summarize_coordinators(coordinator_stats))
+    click.echo(stats_module.summarize_dispatchers(dispatcher_stats))
 
 
 @cli.command("rechunk")
@@ -359,7 +359,7 @@ def validate_hashed_integers_command(
 )
 @endpoint_url_option
 @local_option
-@coordinators_option
+@dispatchers_option
 @concurrency_option
 @retries_option
 @stats_option
@@ -373,7 +373,7 @@ def rechunk_command(
     shard_intermediates: bool,
     keep_intermediates: bool,
     overwrite: bool,
-    coordinators: int | None,
+    dispatchers: int | None,
     endpoint_url: str | None,
     local: bool,
     retries: int,
@@ -410,20 +410,20 @@ def rechunk_command(
         min_mem=min_mem,
         shard_intermediates=shard_intermediates,
     )
-    coordinator_stats: list[dict[str, Any]] = []
+    dispatcher_stats: list[dict[str, Any]] = []
 
     async def go(on_done: Callable[[int], None]) -> Any:
-        async with Lambdas(
+        async with Session(
             endpoint_url=endpoint_url,
-            coordinators=resolve_coordinators(coordinators),
+            dispatchers=resolve_dispatchers(dispatchers),
             concurrency=concurrency,
             retries=retries,
             on_progress=on_done,
-            coordinator_stats=coordinator_stats,
+            dispatcher_stats=dispatcher_stats,
             invocation_stats=collected,
-        ) as lambdas:
+        ) as session:
             return await rechunk_module.rechunk(
-                lambdas,
+                session,
                 source_store,
                 target_store,
                 target_chunks=target_chunks,
@@ -450,7 +450,7 @@ def rechunk_command(
         f"rechunked {source_store} {source.chunks} -> {target_store} {array.chunks} "
         f"(shape {array.shape}, {array.dtype})"
     )
-    click.echo(stats_module.summarize_coordinators(coordinator_stats))
+    click.echo(stats_module.summarize_dispatchers(dispatcher_stats))
 
 
 @cli.command("plan")

@@ -6,7 +6,7 @@ and a check that it survived a rechunk.
 from pathlib import Path
 
 import zarr
-from map_lambda import Lambdas
+from map_lambda import Session
 
 from rechunk_lambda_benchmarks.chunks import chunk_batches
 from rechunk_lambda_benchmarks.spec import array_spec
@@ -20,7 +20,7 @@ HASHED_INTEGERS_DTYPE = "uint32"
 
 
 async def hashed_integers(
-    lambdas: Lambdas,
+    session: Session,
     store: str | Path,
     shape: tuple[int, ...],
     *,
@@ -45,7 +45,7 @@ async def hashed_integers(
         dtype=HASHED_INTEGERS_DTYPE,
     )
     batches = chunk_batches(shape, chunks, chunks_per_invocation)
-    await lambdas.for_each(
+    await session.for_each(
         HASHED_INTEGERS_FUNCTION,
         [[list(coord) for coord in batch] for batch in batches],
         input_key="chunk_coords",
@@ -60,7 +60,7 @@ async def hashed_integers(
 
 
 async def validate_hashed_integers(
-    lambdas: Lambdas,
+    session: Session,
     store: str | Path,
     *,
     chunks_per_invocation: int = 1,
@@ -74,7 +74,7 @@ async def validate_hashed_integers(
     url = store_url(store)
     array = zarr.open_array(store=zarr.storage.ObjectStore(path_to_store(url)), zarr_format=3)
     batches = chunk_batches(array.shape, array.chunks, chunks_per_invocation)
-    await lambdas.for_each(
+    await session.for_each(
         VALIDATE_FUNCTION,
         [[list(coord) for coord in batch] for batch in batches],
         input_key="chunk_coords",

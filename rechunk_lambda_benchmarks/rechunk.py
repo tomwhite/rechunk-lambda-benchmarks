@@ -2,7 +2,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 import zarr
-from map_lambda import Lambdas
+from map_lambda import Session
 
 from rechunk_lambda_benchmarks.chunks import ChunkCoord, chunk_coords
 from rechunk_lambda_benchmarks.plan import CopyOp, chunk_budget, plan
@@ -19,7 +19,7 @@ DEFAULT_MEMORY_MB = 1024  # same as in rust/copy/Cargo.toml
 
 
 async def rechunk(
-    lambdas: Lambdas,
+    session: Session,
     source_store: str | Path,
     target_store: str | Path,
     *,
@@ -98,7 +98,7 @@ async def rechunk(
     ]
 
     for k, op in enumerate(ops):
-        await lambdas.for_each(
+        await session.for_each(
             COPY_FUNCTION,
             [list(coord) for coord in chunk_coords(arrays[k].shape, op.copy_chunks)],
             input_key="copy_chunk_coord",
@@ -116,7 +116,9 @@ async def rechunk(
         # delete previous intermediate store
         if k >= 1 and delete_intermediates:
             try:
-                await lambdas.invoke(DELETE_INTERMEDIATE_FUNCTION, store=intermediates[k - 1])
+                await session.invoke_detached(
+                    DELETE_INTERMEDIATE_FUNCTION, store=intermediates[k - 1]
+                )
             except Exception as e:
                 if on_warning is not None:
                     on_warning(f"could not request deletion of {intermediates[k - 1]}: {e}")

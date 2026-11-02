@@ -170,7 +170,7 @@ def chunk_budget(
     the unsharded budget.
 
     A bigger budget is not automatically better: fewer tasks than the
-    coordinator's concurrency is both dearer and slower.
+    dispatcher's concurrency is both dearer and slower.
     """
     usable = lambda_memory_bytes * safety - PEAK_BASELINE_BYTES
     if usable <= 0:

@@ -2,7 +2,7 @@
 resolver = "2"
 members = [
     "common",
-    "coordinator",
+    "dispatcher",
     "copy",
     "delete-intermediate",
     "hashed-integers",

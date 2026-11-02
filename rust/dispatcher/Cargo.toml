@@ -1,5 +1,5 @@
 [package]
-name = "coordinator"
+name = "dispatcher"
 version = "0.1.0"
 edition = "2021"
 
@@ -9,5 +9,5 @@ timeout = 900
 
 [dependencies]
 lambda_runtime = "1.0.1"
-map-lambda-coordinator = { git = "https://github.com/tomwhite/map-lambda" }
+map-lambda-dispatcher = { git = "https://github.com/tomwhite/map-lambda", rev = "37924bc" }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
