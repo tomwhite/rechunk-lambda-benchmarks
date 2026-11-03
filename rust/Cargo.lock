@@ -1852,7 +1852,7 @@ checksum = "4050469837a6ff301cd14c1f8f24f88549e6d548f24f64e2148eb0f72cebc51f"
 [[package]]
 name = "map-lambda-dispatcher"
 version = "0.1.0"
-source = "git+https://github.com/tomwhite/map-lambda?rev=37924bc#37924bc455558ddd7de3f0a4dcbbe12bf32836f9"
+source = "git+https://github.com/tomwhite/map-lambda?rev=1683456#1683456e637dae4e062a5bd695375598af04f9fd"
 dependencies = [
  "aws-config",
  "aws-credential-types",
@@ -1871,7 +1871,7 @@ dependencies = [
 [[package]]
 name = "map-lambda-protocol"
 version = "0.1.0"
-source = "git+https://github.com/tomwhite/map-lambda?rev=37924bc#37924bc455558ddd7de3f0a4dcbbe12bf32836f9"
+source = "git+https://github.com/tomwhite/map-lambda?rev=1683456#1683456e637dae4e062a5bd695375598af04f9fd"
 dependencies = [
  "serde",
  "serde_json",
