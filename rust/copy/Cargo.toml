@@ -3,10 +3,6 @@ name = "copy"
 version = "0.1.0"
 edition = "2021"
 
-[package.metadata.lambda.deploy]
-memory = 1024
-timeout = 300
-
 [dependencies]
 common = { path = "../common" }
 lambda_runtime = "1.0.1"

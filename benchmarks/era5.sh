@@ -2,7 +2,7 @@
 #
 #   [DRY=1] [SHARD=1] [CONC=500] [MEM=1024] [FRAC=20] benchmarks/era5.sh era5-10GB|era5-100GB|era5-1TB|era5
 #
-# DRY=1 only shows the plan. Otherwise MEM is applied to the deployed copy function.
+# DRY=1 only shows the plan. MEM must be one of the sizes deploy.toml deploys copy at.
 #
 set -euo pipefail
 
@@ -37,10 +37,6 @@ uv run rechunk-lambda-benchmarks plan \
 # On exit, so a failed run (e.g. on data left by an earlier one) prints it too
 trap 'echo; echo "To delete the data: aws s3 rm --recursive --quiet $S/"' EXIT
 
-export AWS_PAGER=""
-aws lambda update-function-configuration --function-name copy --memory-size $MEM >/dev/null
-aws lambda wait function-updated --function-name copy
-
 mkdir -p stats
 
 time uv run rechunk-lambda-benchmarks hashed-integers "$S/source" \
@@ -57,10 +53,13 @@ time uv run rechunk-lambda-benchmarks validate-hashed-integers "$S/target" \
 # REPORT lines reach CloudWatch Logs a few seconds after the run
 sleep 30
 
-for step in hashed-integers:hashed-integers rechunk:copy validate:validate-hashed-integers; do
-  echo; echo "=== ${step%%:*} ==="
-  uv run rechunk-lambda-benchmarks cloudwatch-report "stats/$TAG-${step%%:*}.jsonl" \
-    --function-name "${step##*:}"
-done
+report() {
+  echo; echo "=== $1 ==="
+  uv run rechunk-lambda-benchmarks cloudwatch-report "stats/$TAG-$1.jsonl" --function-name "${@:2}"
+}
+report hashed-integers hashed-integers
+report rechunk copy --memory "$MEM"
+report validate validate-hashed-integers
 
-uv run rechunk-lambda-benchmarks timeline "stats/$TAG-rechunk.jsonl" --function-name copy
+uv run rechunk-lambda-benchmarks timeline "stats/$TAG-rechunk.jsonl" --function-name copy \
+  --memory $MEM

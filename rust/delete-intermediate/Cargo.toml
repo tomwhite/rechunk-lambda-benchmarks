@@ -3,10 +3,6 @@ name = "delete-intermediate"
 version = "0.1.0"
 edition = "2021"
 
-[package.metadata.lambda.deploy]
-memory = 512
-timeout = 300
-
 [dependencies]
 
 futures = "0.3"

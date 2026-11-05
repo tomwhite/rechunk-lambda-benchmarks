@@ -34,11 +34,18 @@ uv run rechunk-lambda-benchmarks validate-hashed-integers /tmp/ints-rechunked --
 
 ### Deployment
 
+The lambdas are deployed as the map-lambda project `rechunk-lambda`, described by `rechunk_lambda_benchmarks/deploy.toml`: one CloudFormation stack holding `rechunk-lambda-dispatcher`, the four workers (`rechunk-lambda-copy` and so on), their roles and their logs. Building needs Rust, [Zig](https://ziglang.org/) and [cargo lambda](https://www.cargo-lambda.info/).
+
 ```shell
-./aws/setup-roles.sh   # once - wait a few seconds for IAM to apply
-./aws/deploy.sh
-./aws/teardown.sh      # when you're finished
+aws s3 mb s3://rechunk-lambda-benchmarks   # once
+uv run rechunk-lambda-benchmarks deploy --from-source --allow-bucket rechunk-lambda-benchmarks
+uv run rechunk-lambda-benchmarks list      # what is deployed
+uv run rechunk-lambda-benchmarks delete    # when you're finished; the bucket and its data stay
 ```
+
+Deploy again after any change; the stack remembers the bucket. Each worker can only do what it needs to the buckets a deploy has allowed: `validate-hashed-integers` only reads, and `delete-intermediate` can only delete under `_intermediate/`.
+
+`copy` is deployed at each size in its `memory` list, and `rechunk --memory` picks one and plans to fit it, defaulting to the first. To try another size, add it to the list and deploy again.
 
 ### Sanity check
 

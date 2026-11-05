@@ -916,9 +916,13 @@ wheels = [
 [[package]]
 name = "map-lambda"
 version = "0.1.0"
-source = { git = "https://github.com/tomwhite/map-lambda?rev=1683456#1683456e637dae4e062a5bd695375598af04f9fd" }
+source = { git = "https://github.com/tomwhite/map-lambda?rev=bb0893a#bb0893a6a0c71be72dde4419991e891caf5912b3" }
 
 [package.optional-dependencies]
+deploy = [
+    { name = "boto3" },
+    { name = "click" },
+]
 diagnostics = [
     { name = "matplotlib" },
 ]
@@ -1732,7 +1736,7 @@ dependencies = [
     { name = "aioboto3" },
     { name = "boto3" },
     { name = "click" },
-    { name = "map-lambda" },
+    { name = "map-lambda", extra = ["deploy"] },
     { name = "obstore" },
     { name = "zarr" },
 ]
@@ -1757,8 +1761,8 @@ requires-dist = [
     { name = "aioboto3", specifier = ">=15.5.0" },
     { name = "boto3", specifier = ">=1.40.61" },
     { name = "click", specifier = ">=8.5.0" },
-    { name = "map-lambda", git = "https://github.com/tomwhite/map-lambda?rev=1683456" },
-    { name = "map-lambda", extras = ["diagnostics"], marker = "extra == 'diagnostics'", git = "https://github.com/tomwhite/map-lambda?rev=1683456" },
+    { name = "map-lambda", extras = ["deploy"], git = "https://github.com/tomwhite/map-lambda?rev=bb0893a" },
+    { name = "map-lambda", extras = ["diagnostics"], marker = "extra == 'diagnostics'", git = "https://github.com/tomwhite/map-lambda?rev=bb0893a" },
     { name = "obstore", specifier = ">=0.11.1" },
     { name = "zarr", specifier = ">=3.3.0" },
 ]

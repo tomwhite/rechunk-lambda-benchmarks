@@ -5,6 +5,7 @@ import zarr
 from map_lambda import Session
 
 from rechunk_lambda_benchmarks.chunks import ChunkCoord, chunk_coords
+from rechunk_lambda_benchmarks.deploy import memory_sizes
 from rechunk_lambda_benchmarks.plan import CopyOp, chunk_budget, plan
 from rechunk_lambda_benchmarks.spec import array_spec
 from rechunk_lambda_benchmarks.store import path_to_store, store_url
@@ -15,7 +16,6 @@ DELETE_INTERMEDIATE_FUNCTION = "delete-intermediate"
 INTERMEDIATE_PREFIX = "_intermediate"
 
 MB = 1_000_000
-DEFAULT_MEMORY_MB = 1024  # same as in rust/copy/Cargo.toml
 
 
 async def rechunk(
@@ -42,6 +42,9 @@ async def rechunk(
     `delete_scratch` is False; a failed deletion goes to `on_warning`, or
     is reported by a caller's own `delete_store`.
 
+    `memory_mb` picks which of copy's deployed sizes runs, and what to plan
+    for if `ops` isn't given.
+
     `overwrite` replaces an existing target, as a failed run leaves one.
     Intermediates are always overwritten.
 
@@ -58,7 +61,8 @@ async def rechunk(
         store=zarr.storage.ObjectStore(path_to_store(source)), zarr_format=3
     )
     if ops is None:
-        max_mem = chunk_budget((memory_mb or DEFAULT_MEMORY_MB) * MB, sharded=shard_intermediates)
+        default_mb = memory_sizes(COPY_FUNCTION)[0]
+        max_mem = chunk_budget((memory_mb or default_mb) * MB, sharded=shard_intermediates)
         ops = plan(
             source_array.shape,
             source_array.chunks,
@@ -102,6 +106,7 @@ async def rechunk(
             COPY_FUNCTION,
             [list(coord) for coord in chunk_coords(arrays[k].shape, op.copy_chunks)],
             input_key="copy_chunk_coord",
+            memory=memory_mb,
             constant_args={
                 "source_store": stores[k],
                 "source_array_path": "/",

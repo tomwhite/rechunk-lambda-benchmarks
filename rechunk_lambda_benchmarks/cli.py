@@ -7,6 +7,7 @@ from typing import Any, Literal
 
 import boto3
 import click
+import map_lambda.deploy
 import numpy as np
 import zarr
 from botocore.exceptions import BotoCoreError, ClientError
@@ -20,6 +21,7 @@ from rechunk_lambda_benchmarks import cloudwatch, cost
 from rechunk_lambda_benchmarks import hashed_integers as hashed_integers_module
 from rechunk_lambda_benchmarks import plan as plan_module
 from rechunk_lambda_benchmarks import rechunk as rechunk_module
+from rechunk_lambda_benchmarks.deploy import PROJECT, SPEC, memory_sizes
 from rechunk_lambda_benchmarks.store import path_to_store, store_url
 
 
@@ -56,6 +58,11 @@ def open_array(store: str, name: str | None = None) -> Any:
 
 def resolve_dispatchers(dispatchers: int | None) -> "int | Literal['auto']":
     return "auto" if dispatchers is None else dispatchers
+
+
+def deployed_name(function_name: str, memory: int | None) -> str:
+    """The name a run on AWS invoked `function_name` under, to find its logs."""
+    return Session(project=PROJECT).function_name(function_name, memory=memory)
 
 
 def resolve_endpoint_url(local: bool, endpoint_url: str | None) -> str | None:
@@ -229,6 +236,7 @@ def hashed_integers_command(
 
     async def go(on_done: Callable[[int], None]) -> Any:
         async with Session(
+            project=PROJECT,
             endpoint_url=endpoint_url,
             dispatchers=resolve_dispatchers(dispatchers),
             concurrency=concurrency,
@@ -290,6 +298,7 @@ def validate_hashed_integers_command(
 
     async def go(on_done: Callable[[int], None]) -> Any:
         async with Session(
+            project=PROJECT,
             endpoint_url=endpoint_url,
             dispatchers=resolve_dispatchers(dispatchers),
             concurrency=concurrency,
@@ -323,9 +332,11 @@ def validate_hashed_integers_command(
 @click.option(
     "--memory",
     type=int,
-    default=1024,
-    show_default=True,
-    help="Memory (MB) the rechunk function is deployed with.",
+    default=None,
+    help=(
+        "Memory (MB) of the copy function to run and plan for: one of the sizes "
+        "deploy.toml deploys it at. [default: the first]"
+    ),
 )
 @click.option(
     "--min-mem-fraction",
@@ -368,7 +379,7 @@ def rechunk_command(
     source_store: str,
     target_store: str,
     target_chunks: tuple[int, ...],
-    memory: int,
+    memory: int | None,
     min_mem_fraction: int,
     shard_intermediates: bool,
     keep_intermediates: bool,
@@ -391,14 +402,18 @@ def rechunk_command(
     `rechunker-lambda plan` shows what will happen without running it.
     """
     endpoint_url = resolve_endpoint_url(local, endpoint_url)
+    sizes = memory_sizes(rechunk_module.COPY_FUNCTION)
+    if memory is not None and memory not in sizes:
+        raise click.UsageError(
+            f"copy is deployed at {', '.join(map(str, sizes))} MB: add {memory} to its "
+            "memory in deploy.toml and deploy, to use it"
+        )
     source_store = store_url(source_store)
     target_store = store_url(target_store, mkdir=True)
     collected = collect_stats(stats, stats_path)
 
     source = open_array(source_store)
-    memory_bytes = memory * 1_000_000
-
-    memory_bytes = memory * 1_000_000
+    memory_bytes = (memory or sizes[0]) * 1_000_000
     budget = plan_module.chunk_budget(memory_bytes, sharded=shard_intermediates)
     min_mem = budget // min_mem_fraction
     ops = plan_module.plan(
@@ -414,6 +429,7 @@ def rechunk_command(
 
     async def go(on_done: Callable[[int], None]) -> Any:
         async with Session(
+            project=PROJECT,
             endpoint_url=endpoint_url,
             dispatchers=resolve_dispatchers(dispatchers),
             concurrency=concurrency,
@@ -428,6 +444,7 @@ def rechunk_command(
                 target_store,
                 target_chunks=target_chunks,
                 ops=ops,
+                memory_mb=memory,
                 delete_intermediates=not keep_intermediates,
                 overwrite=overwrite,
                 on_warning=lambda message: click.echo(f"warning: {message}", err=True),
@@ -466,9 +483,8 @@ def rechunk_command(
 @click.option(
     "--memory",
     type=int,
-    default=1024,
-    show_default=True,
-    help="Memory (MB) the rechunk function is deployed with.",
+    default=None,
+    help="Memory (MB) of the copy function to plan for. [default: its deployed default]",
 )
 @click.option(
     "--min-mem-fraction",
@@ -493,7 +509,7 @@ def plan_command(
     shape: tuple[int, ...] | None,
     source_chunks: tuple[int, ...] | None,
     dtype: str,
-    memory: int,
+    memory: int | None,
     min_mem_fraction: int,
     shard_intermediates: bool = False,
 ) -> None:
@@ -510,7 +526,7 @@ def plan_command(
             )
         itemsize = np.dtype(dtype).itemsize
 
-    memory_bytes = memory * 1_000_000
+    memory_bytes = (memory or memory_sizes(rechunk_module.COPY_FUNCTION)[0]) * 1_000_000
     budget = plan_module.chunk_budget(memory_bytes, sharded=shard_intermediates)
     min_mem = budget // min_mem_fraction
     ops = plan_module.plan(
@@ -530,7 +546,13 @@ def plan_command(
 @click.option(
     "--function-name",
     required=True,
-    help="Function the run invoked; its log group is /aws/lambda/<function-name>.",
+    help="The worker the run invoked, as this project names it, such as copy.",
+)
+@click.option(
+    "--memory",
+    type=int,
+    default=None,
+    help="The worker's memory (MB), if the run chose one of its sizes.",
 )
 @click.option(
     "--timeout",
@@ -543,6 +565,7 @@ def plan_command(
 def cloudwatch_report_command(
     stats_file: str,
     function_name: str,
+    memory: int | None,
     timeout: float,
     slowest: int,
 ) -> None:
@@ -556,7 +579,7 @@ def cloudwatch_report_command(
     there. Needs `logs:StartQuery`/`logs:GetQueryResults` and reads logs
     the functions already write.
     """
-    log_group = cloudwatch.log_group_name(function_name)
+    log_group = cloudwatch.log_group_name(deployed_name(function_name, memory))
 
     stats = stats_module.read_jsonl(stats_file)
     if not stats:
@@ -610,9 +633,16 @@ def cloudwatch_report_command(
     "--function-name",
     default=None,
     help=(
-        "Join CloudWatch REPORT lines from this function's log group, to draw when each "
-        "invocation was actually running rather than only when it was dispatched."
+        "Join CloudWatch REPORT lines from this worker's log group, to draw when each "
+        "invocation was actually running rather than only when it was dispatched. The "
+        "worker as this project names it, such as copy."
     ),
+)
+@click.option(
+    "--memory",
+    type=int,
+    default=None,
+    help="The worker's memory (MB), if the run chose one of its sizes.",
 )
 @click.option(
     "--max-points",
@@ -633,6 +663,7 @@ def timeline_command(
     stats_file: str,
     output_path: str | None,
     function_name: str | None,
+    memory: int | None,
     max_points: int,
     title: str | None,
     timeout: float,
@@ -656,7 +687,7 @@ def timeline_command(
 
     records: list[Any] = stats
     if function_name is not None:
-        log_group = cloudwatch.log_group_name(function_name)
+        log_group = cloudwatch.log_group_name(deployed_name(function_name, memory))
         windows = cloudwatch.query_windows(stats)
         queries = f" in {len(windows)} queries" if len(windows) > 1 else ""
         click.echo(f"querying {log_group} for {len(stats)} request ids{queries}...")
@@ -688,6 +719,10 @@ def timeline_command(
     output = output_path or str(Path(stats_file).with_suffix(".svg"))
     figure.savefig(output)
     click.echo(f"wrote {output} ({len(records)} invocations)")
+
+
+for _command in map_lambda.deploy.commands(SPEC):
+    cli.add_command(_command)
 
 
 if __name__ == "__main__":

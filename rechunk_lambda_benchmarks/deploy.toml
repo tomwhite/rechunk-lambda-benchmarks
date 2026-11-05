@@ -1,0 +1,53 @@
+project = "rechunk-lambda"
+workspace = "../rust"
+
+# A rechunk's --memory picks one of these, and plans to fit it.
+[functions.copy]
+memory = [1024, 1280]
+timeout = 300
+
+[[functions.copy.bucket_access]]
+action = ["s3:GetObject", "s3:PutObject"]
+resource = "arn:aws:s3:::{bucket}/*"
+
+# makes a GET for a missing key 404 rather than 403
+[[functions.copy.bucket_access]]
+action = ["s3:ListBucket"]
+resource = "arn:aws:s3:::{bucket}"
+
+[functions.hashed-integers]
+memory = 1769
+timeout = 300
+
+[[functions.hashed-integers.bucket_access]]
+action = ["s3:GetObject", "s3:PutObject"]
+resource = "arn:aws:s3:::{bucket}/*"
+
+[[functions.hashed-integers.bucket_access]]
+action = ["s3:ListBucket"]
+resource = "arn:aws:s3:::{bucket}"
+
+[functions.validate-hashed-integers]
+memory = 1769
+timeout = 300
+
+[[functions.validate-hashed-integers.bucket_access]]
+action = ["s3:GetObject"]
+resource = "arn:aws:s3:::{bucket}/*"
+
+[[functions.validate-hashed-integers.bucket_access]]
+action = ["s3:ListBucket"]
+resource = "arn:aws:s3:::{bucket}"
+
+[functions.delete-intermediate]
+memory = 512
+timeout = 300
+
+[[functions.delete-intermediate.bucket_access]]
+action = ["s3:ListBucket"]
+resource = "arn:aws:s3:::{bucket}"
+
+# matching the guard in the function itself
+[[functions.delete-intermediate.bucket_access]]
+action = ["s3:DeleteObject"]
+resource = "arn:aws:s3:::{bucket}/*/_intermediate/*"
